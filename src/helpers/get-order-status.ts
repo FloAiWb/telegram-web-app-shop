@@ -1,20 +1,20 @@
-export const GetOrderStatus = (e: string) => {
-  switch (e) {
-    case "Pending":
-      return " در انتظار تایید ";
-    case "Processing":
-      return "درحال انجام ";
-    case "Packing":
-      return " درحال بسته بندی  ";
-    case "CancelledByCustomer":
-      return "لغو توسط مشتری ";
-    case "CancelledDueToUnavailability":
-      return "اتمام موجودی 1 یا چند کالا";
-    case "CancelledByAdmin":
-      return "لغو توسط ادمین";
-    case "Shipped":
-      return "تحویل داده شده ";
-    default:
-      return " در انتظار تایید ";
-  }
+// src/helpers/get-order-status.ts
+
+import t from "@/i18n/ru";
+
+/**
+ * Возвращает человекочитаемую строку статуса заказа на русском
+ */
+export const GetOrderStatus = (status: string): string => {
+  const map: Record<string, string> = {
+    Pending:                        t.pending,                      // В ожидании подтверждения
+    Processing:                     t.processing,                   // В обработке
+    Packing:                        t.packing,                      // Упаковка
+    CancelledByCustomer:            t.cancelledByCustomer,          // Отменено клиентом
+    CancelledDueToUnavailability:   t.cancelledDueToUnavailability, // Отменено из-за отсутствия
+    CancelledByAdmin:               t.cancelledByAdmin,             // Отменено администратором
+    Shipped:                        t.shipped                       // Доставлено
+  };
+
+  return map[status] || t.pending;
 };
