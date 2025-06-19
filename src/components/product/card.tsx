@@ -3,7 +3,8 @@
 import { addCommas } from "@persian-tools/persian-tools";
 import { Button, Divider } from "antd";
 import { Link } from "react-router-dom";
-import t from "@/i18n/ru.json";
+import t from "@/i18n/ru";   // ← путь EXACTLY так
+
 
 interface Props {
   url: string;
