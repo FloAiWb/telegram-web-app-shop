@@ -16,7 +16,9 @@ import {
   message,
   Popconfirm
 } from "antd";
-import { DatePicker, useJalaliLocaleListener } from "antd-jalali";
+import { DatePicker } from "antd";
+// и убедитесь, что ConfigProvider.locale={ru_RU} охватывает все DatePicker’ы
+
 import type { RangePickerProps } from "antd/es/date-picker";
 
 import dayjs from "dayjs";
