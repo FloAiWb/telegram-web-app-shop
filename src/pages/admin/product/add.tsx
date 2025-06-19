@@ -1,13 +1,12 @@
-/* eslint-disable no-unused-expressions */
-/* eslint-disable operator-linebreak */
-/* eslint-disable react/no-array-index-key */
-/* eslint-disable camelcase */
+// src/components/AddProduct.tsx
+
+import React, { useEffect, useState } from "react";
 import Container from "@components/container";
 import { useGetCategories } from "@framework/api/categories/get";
-import useAddProductImage from "@framework/api/photos-upload/add";
 import useAddProduct from "@framework/api/product/add";
-import { TypeProductPost } from "@framework/types";
+import useAddProductImage from "@framework/api/photos-upload/add";
 import useTelegramUser from "@hooks/useTelegramUser";
+import { TypeProductPost } from "@framework/types";
 import {
   Button,
   Form,
@@ -17,230 +16,203 @@ import {
   Spin,
   TreeSelect
 } from "antd";
-import { useEffect, useState } from "react";
 import ImageUploading from "react-images-uploading";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
+import t from "@/i18n/ru";
 
 const { TextArea } = Input;
-function Add() {
-  const [componentDisabled, setComponentDisabled] = useState<boolean>(false);
-  // const [priceEnterd, setPriceEnterd] = useState<number>(0);
 
-  const {
-    data: categoriesData,
-    isLoading: isCatLoading,
-    refetch: catRefetch,
-    isFetching: isCatFetching
-  } = useGetCategories({});
-  const mutation = useAddProduct();
-  const mutationUploadPhotos = useAddProductImage();
-  const { id } = useTelegramUser();
-  const [form] = Form.useForm();
+const AddProduct: React.FC = () => {
+  const [images, setImages] = useState<any[]>([]);
+  const [imageLinks, setImageLinks] = useState<string[]>([]);
+  const { data: categories, isLoading: loadingCats, refetch: refetchCats, isFetching: fetchingCats } = useGetCategories({});
+  const addProduct = useAddProduct();
+  const uploadPhoto = useAddProductImage();
+  const { id: userId } = useTelegramUser();
+  const [form] = Form.useForm<TypeProductPost>();
   const navigate = useNavigate();
-  useEffect(() => {
-    catRefetch();
-  }, []);
 
-  const [imageLinkList, setImageLinkList] = useState<Array<string>>([]);
-  const [images, setImages] = useState([]);
-  const onChangeImage = async (imageList) => {
-    // data for submit
-    imageList.length &&
-      (await imageList.map(async (i: { data_url: string }) => {
-        mutationUploadPhotos.mutate(
-          { photo_base64: i.data_url.split(",")[1] },
-          {
-            onSuccess: (e) => {
-              setImageLinkList([...imageLinkList, `${e.data}`]);
-            },
-            onError: () => {
-              message.error("افزودن عکس با مشکل مواجه شد");
-            }
-          }
-        );
-      }));
+  useEffect(() => {
+    refetchCats();
+  }, [refetchCats]);
+
+  const onChangeImage = async (imageList: any[]) => {
     setImages(imageList);
-  };
-  const handleRemoveSingleImage = (idx) => {
-    const arr = [...imageLinkList];
-    if (idx !== -1) {
-      arr.splice(idx, 1);
-      setImageLinkList(arr);
+    for (const img of imageList) {
+      const base64 = img.data_url.split(",")[1];
+      uploadPhoto.mutate(
+        { photo_base64: base64 },
+        {
+          onSuccess: (res) => {
+            setImageLinks((prev) => [...prev, res.data]);
+          },
+          onError: () => {
+            message.error(t.productImageUploadError);
+          }
+        }
+      );
     }
   };
 
+  const handleRemoveImage = (index: number) => {
+    setImageLinks((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const onFinish = (values: TypeProductPost) => {
+    addProduct.mutate(
+      {
+        user_id: userId.toString(),
+        product_name: values.product_name,
+        category_ids: Array.isArray(values.category_ids)
+          ? values.category_ids
+          : values.category_ids
+          ? [values.category_ids]
+          : [],
+        price: values.price,
+        quantity: values.quantity,
+        description: values.description,
+        photos: imageLinks
+      },
+      {
+        onSuccess: () => {
+          message.success(t.productAdded);
+          form.resetFields();
+          setImages([]);
+          setImageLinks([]);
+          navigate("/admin/products");
+        },
+        onError: () => {
+          message.error(t.productAddError);
+        }
+      }
+    );
+  };
+
   return (
-    <Container backwardUrl={-1} title="افزودن محصول جدید">
+    <Container backwardUrl={-1} title={t.addProduct}>
       <Form
+        form={form}
+        layout="horizontal"
         labelCol={{ span: 5 }}
         wrapperCol={{ span: 20 }}
-        layout="horizontal"
-        disabled={componentDisabled}
-        onFinish={({
-          category_ids,
-          description,
-          price,
-          photos,
-          product_name,
-          quantity
-        }: TypeProductPost) => {
-          mutation.mutate(
-            {
-              category_ids:
-                typeof category_ids === "number"
-                  ? [category_ids]
-                  : category_ids || [],
-              description,
-              photos: imageLinkList || [],
-              price,
-              product_name,
-              quantity,
-              user_id: id.toString()
-            },
-            {
-              onSuccess: () => {
-                message.success(" محصول شما با موفقیت ثبت شد");
-                form.resetFields();
-                navigate("/admin/products");
-              },
-              onError: (err) => {
-                // console.log(err)
-                message.error(err?.response?.data?.title);
-              }
-            }
-          );
-        }}>
-        <Form.Item name="product_name" required label="نام محصول">
-          <Input required />
+        onFinish={onFinish}
+        className="flex flex-col h-full"
+      >
+        <Form.Item
+          name="product_name"
+          label={t.productName}
+          rules={[{ required: true, message: t.requiredField }]}
+        >
+          <Input placeholder={t.productNamePlaceholder} />
         </Form.Item>
-        <Form.Item name="category_ids" label="دسته بندی">
-          {/* <Cascader
-            style={{ width: "100%" }}
-            options={categoriesData}
-            multiple={false}
-            changeOnSelect
-            showSearch
-            maxTagCount="responsive"
-            loading={isCatLoading || isCatFetching}
-            fieldNames={{
-              label: "category_Name",
-              value: "category_Id",
-              children: "children"
-            }}
-          /> */}
+
+        <Form.Item
+          name="category_ids"
+          label={t.category}
+          rules={[{ required: true, message: t.requiredField }]}
+        >
           <TreeSelect
             showSearch
-            showCheckedStrategy="SHOW_PARENT"
-            treeData={categoriesData}
-            loading={isCatLoading || isCatFetching}
-            onChange={(e) => console.log(e)}
-            treeLine
-            style={{
-              width: "100%"
-            }}
+            treeData={categories}
+            loading={loadingCats || fetchingCats}
             fieldNames={{
               label: "category_Name",
               value: "category_Id",
-              key: "category_Id",
               children: "children"
             }}
+            placeholder={t.categoryPlaceholder}
+            style={{ width: "100%" }}
           />
         </Form.Item>
-        {/* <Form.Item label="DatePicker">
-        <DatePicker />
-      </Form.Item>
-      <Form.Item label="RangePicker">
-        <RangePicker />
-      </Form.Item> */}
-        <Form.Item label="قیمت (تومان) " required name="price">
-          <InputNumber
-            // onChange={(e) => setPriceEnterd(e || 0)}
-            formatter={(value) =>
-              `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-            }
-            parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
-            required
-            className="w-1/2"
-            // type="number"
-          />
-        </Form.Item>
-        {/* <div className="-mt-4">
-          {numberToWords(priceEnterd)} <b>تومان</b>
-        </div> */}
-        <Form.Item label="تعداد موجودی" required name="quantity">
-          <InputNumber required type="number" className="w-1/2" />
-        </Form.Item>
-        {/* <Form.Item label="تعداد موجودی " name="stock">
-          <InputNumber type="number" />
-        </Form.Item> */}
-        <Form.Item label="توضیحات" required name="description">
-          <TextArea required rows={10} />
-        </Form.Item>
-        {/* <Form.Item label="Switch" valuePropName="checked">
-        <Switch />
-      </Form.Item> */}
+
         <Form.Item
-          className="mb-14 w-full"
+          name="price"
+          label={`${t.price} (${t.currency})`}
+          rules={[{ required: true, message: t.requiredField }]}
+        >
+          <InputNumber
+            className="w-1/2"
+            formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+            parser={(v) => v.replace(/,*/g, "")}
+            placeholder={t.pricePlaceholder}
+          />
+        </Form.Item>
+
+        <Form.Item
+          name="quantity"
+          label={t.quantity}
+          rules={[{ required: true, message: t.requiredField }]}
+        >
+          <InputNumber className="w-1/2" placeholder={t.quantityPlaceholder} />
+        </Form.Item>
+
+        <Form.Item
+          name="description"
+          label={t.description}
+          rules={[{ required: true, message: t.requiredField }]}
+        >
+          <TextArea rows={6} placeholder={t.descriptionPlaceholder} />
+        </Form.Item>
+
+        <Form.Item
           name="photos"
-          label="عکس محصول"
-          valuePropName="photos">
-          {mutationUploadPhotos.isLoading ? (
-            <Spin spinning />
+          label={t.productImages}
+          valuePropName="photos"
+        >
+          {uploadPhoto.isLoading ? (
+            <Spin tip={t.loading} />
           ) : (
             <ImageUploading
               value={images}
               onChange={onChangeImage}
               maxNumber={4}
-              dataURLKey="data_url">
+              dataURLKey="data_url"
+            >
               {({
                 onImageUpload,
                 onImageRemoveAll,
-                onImageRemove,
                 isDragging,
                 dragProps
               }) => (
-                // write your building UI
-                <div className="upload__image-wrapper flex flex-col">
-                  <div className="mb-5 flex h-[60px]  w-full">
+                <div className="flex flex-col">
+                  <div className="flex mb-4 h-[60px] gap-2">
                     <button
+                      type="button"
                       style={isDragging ? { color: "red" } : undefined}
                       onClick={onImageUpload}
-                      type="button"
-                      className="h-full w-full border-[1px] border-dashed"
-                      {...dragProps}>
-                      افزودن عکس
+                      {...dragProps}
+                      className="flex-1 border border-dashed p-2"
+                    >
+                      {t.addImages}
                     </button>
-                    &nbsp;
                     <button
-                      className="h-full w-20 bg-red-600 "
                       type="button"
                       onClick={() => {
                         onImageRemoveAll();
-                        setImageLinkList([]);
-                      }}>
-                      حذف همه
+                        setImageLinks([]);
+                      }}
+                      className="w-32 bg-red-600 text-white"
+                    >
+                      {t.removeAllImages}
                     </button>
                   </div>
-                  <div className="grid h-[240px] w-full grid-cols-2 grid-rows-2  gap-y-7 overflow-x-auto overflow-y-scroll  ">
-                    {imageLinkList?.map((image, index) => (
-                      <div key={index} className=" h-24 w-36 rounded-lg">
+                  <div className="grid grid-cols-2 gap-4 overflow-auto h-[240px]">
+                    {imageLinks.map((link, idx) => (
+                      <div key={idx} className="relative">
                         <img
-                          src={`${import.meta.env.VITE_API_URL}/${image}`}
-                          alt=""
-                          className="h-full w-full rounded-lg "
+                          src={`${import.meta.env.VITE_API_URL}/${link}`}
+                          alt={t.productImageAlt}
+                          className="w-full h-24 object-cover rounded"
                         />
-                        <div className="flex justify-between gap-3">
-                          <Button
-                            danger
-                            className="w-full"
-                            htmlType="button"
-                            onClick={() => {
-                              handleRemoveSingleImage(index);
-                              // onImageRemove(index)
-                            }}>
-                            حذف
-                          </Button>
-                        </div>
+                        <Button
+                          danger
+                          block
+                          size="small"
+                          onClick={() => handleRemoveImage(idx)}
+                          className="mt-2"
+                        >
+                          {t.removeImage}
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -252,17 +224,16 @@ function Add() {
 
         <Button
           type="primary"
-          style={{ width: "100%" }}
-          size="large"
-          ghost
-          loading={mutation.isLoading}
-          // className="sticky bottom-3"
-          htmlType="submit">
-          ذخیره
+          htmlType="submit"
+          loading={addProduct.isLoading}
+          disabled={addProduct.isLoading}
+          className="mt-auto w-full"
+        >
+          {t.save}
         </Button>
       </Form>
     </Container>
   );
-}
+};
 
-export default Add;
+export default AddProduct;
