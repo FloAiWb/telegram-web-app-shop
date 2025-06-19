@@ -1,28 +1,30 @@
+// src/components/AdminMenu.tsx
+
+import React from "react";
 import { Button } from "antd";
 import { useNavigate } from "react-router-dom";
+import t from "@/i18n/ru";
 
-function Admin() {
-  // const tgApp = useTelegram();
-
-  // const userId = tgApp.initDataUnsafe.user.id;
+const AdminMenu: React.FC = () => {
   const navigate = useNavigate();
+
   return (
     <div className="flex flex-col gap-4">
-      منو ادمین
-      {/*
-      <MainButtonDemo />
-      <BackButtonDemo />
-      <ShowPopupDemo />
-      <HapticFeedbackDemo /> */}
-      <Button onClick={() => navigate("/admin/products")}>محصولات</Button>
-      <Button onClick={() => navigate("/admin/categories")}>
-        دسته بندی ها
+      <h2 className="text-lg font-semibold">{t.adminMenu}</h2>
+      <Button block onClick={() => navigate("/admin/products")}>
+        {t.products}
       </Button>
-      <Button onClick={() => navigate("/admin/orders")}>سفارشات کاربران</Button>
-      {/* <Button onClick={() => navigate("/admin/discounts")}> تخفیفات </Button> */}
-      <Button onClick={() => navigate("/admin/slider")}>اسلایدر </Button>
+      <Button block onClick={() => navigate("/admin/categories")}>
+        {t.categories}
+      </Button>
+      <Button block onClick={() => navigate("/admin/orders")}>
+        {t.userOrders}
+      </Button>
+      <Button block onClick={() => navigate("/admin/slider")}>
+        {t.slider}
+      </Button>
     </div>
   );
-}
+};
 
-export default Admin;
+export default AdminMenu;
