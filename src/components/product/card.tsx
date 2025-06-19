@@ -60,13 +60,13 @@ function Card({
           </div>
           {finalPrice && (
             <div className="flex flex-row gap-3 self-end text-right">
-              <span>تومان</span> <span>{addCommas(discountedPrice)}</span>
+              <span>{t.currency}</span> <span>{addCommas(discountedPrice)}</span>
             </div>
           )}
           {/* <div className="self-start text-left">تعداد :{quantity} عدد</div> */}
         </div>
         <Button className="w-full self-end" type="default">
-          دیدن محصول
+          ru
         </Button>
       </div>
     </Link>
