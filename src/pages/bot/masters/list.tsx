@@ -1,94 +1,97 @@
-/* eslint-disable camelcase */
-/* eslint-disable no-nested-ternary */
-/* eslint-disable object-curly-newline */
+// src/components/BotMastersList.tsx
+
+import React, { useEffect } from "react";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import Container from "@components/container";
-import useDeleteMaster from "@framework/api/master/delete";
 import { useGetMasters } from "@framework/api/master/get";
+import useDeleteMaster from "@framework/api/master/delete";
 import useTelegramUser from "@hooks/useTelegramUser";
-import { Button, Popconfirm, Space, Table, message } from "antd";
-import { useEffect } from "react";
-import { useLocation, useNavigate } from "react-router";
-import { Link } from "react-router-dom";
+import { Table, Space, Popconfirm, Button, message } from "antd";
+import { useNavigate, useLocation, Link } from "react-router-dom";
+import t from "@/i18n/ru";
 
-function BotMastersList() {
+interface MasterItem {
+  id: string;
+  name: string;
+  last_Name: string;
+}
+
+const BotMastersList: React.FC = () => {
   const navigate = useNavigate();
-  const { data, isFetching, isLoading, refetch } = useGetMasters();
-  const deleteMutation = useDeleteMaster();
   const location = useLocation();
-  const { id: user_id } = useTelegramUser();
-  const handleDeleteMaster = (id: string) => {
-    deleteMutation.mutate(
-      {
-        master_id: id,
-        user_id
-      },
+  const { data, isLoading, isFetching, refetch } = useGetMasters();
+  const deleteMaster = useDeleteMaster();
+  const { id: userId } = useTelegramUser();
+
+  useEffect(() => {
+    refetch();
+  }, [location, refetch]);
+
+  const handleDelete = (masterId: string) => {
+    deleteMaster.mutate(
+      { master_id: masterId, user_id: userId },
       {
         onSuccess: () => {
-          message.success("کاربر حذف شد");
+          message.success(t.deleteMasterSuccess);
           refetch();
         },
         onError: () => {
-          message.error(" مشکل برای حذف رخ داد ");
+          message.error(t.deleteMasterError);
           refetch();
         }
       }
     );
   };
 
-  const dataSource = data?.map((item) => ({
+  const dataSource = data?.map((item: MasterItem) => ({
+    key: item.id,
     ...item,
-    title: `${item.name} ${item.last_Name} `,
-    key: item.id
-  }));
-  useEffect(() => {
-    refetch();
-  }, [location, refetch]);
+    title: `${item.name} ${item.last_Name}`
+  })) || [];
 
   const columns = [
     {
-      title: "نام",
+      title: t.masterName,
       dataIndex: "title",
       key: "name"
     },
     {
-      title: "عملیات",
-      dataIndex: "عملیات",
-      key: "عملیات",
-      render: (_, record) => (
+      title: t.actions,
+      key: "actions",
+      render: (_: any, record: MasterItem) => (
         <Space size="small">
-          <Link state={record} to={`${record.id}`}>
-            <EditOutlined />
+          <Link to={record.id} state={record}>
+            <EditOutlined title={t.edit} />
           </Link>
           <Popconfirm
-            placement="top"
-            title="حذف این استاد ؟"
-            onConfirm={() => handleDeleteMaster(record.id)}
-            okText="حذف"
-            okType="default"
-            cancelText="انصراف">
-            <Button type="link" size="small" danger>
-              <DeleteOutlined />
-            </Button>
+            title={t.confirmDeleteMaster}
+            onConfirm={() => handleDelete(record.id)}
+            okText={t.delete}
+            cancelText={t.cancel}
+            okType="danger"
+          >
+            <Button type="link" danger icon={<DeleteOutlined />} />
           </Popconfirm>
         </Space>
       )
     }
   ];
+
   return (
     <Container
-      title="اساتید"
+      title={t.masters}
       backwardUrl="/bot"
       customButton
-      customButtonTitle="افزودن"
-      customButtonOnClick={() => navigate("add")}>
+      customButtonTitle={t.add}
+      customButtonOnClick={() => navigate("add")}
+    >
       <Table
-        loading={isFetching || isLoading || deleteMutation.isLoading}
+        loading={isLoading || isFetching || deleteMaster.isLoading}
         dataSource={dataSource}
         columns={columns}
       />
     </Container>
   );
-}
+};
 
 export default BotMastersList;
