@@ -1,5 +1,5 @@
 import "@style/index.css";
-
+import strings from "./i18n/ru.json";
 import { createRoot } from "react-dom/client";
 
 import App from "./App";
