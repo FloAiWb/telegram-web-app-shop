@@ -23,6 +23,7 @@ import {
 import { useState } from "react";
 
 import ProductItem from "./item";
+import t from "@/i18n/ru";
 
 interface Props {
   pageType: "admin" | "user";
