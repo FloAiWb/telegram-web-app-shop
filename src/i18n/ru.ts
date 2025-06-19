@@ -35,11 +35,10 @@ const ru = {
   categoryAddError: "Не удалось добавить категорию. Попробуйте позже",
   categoryUpdated: "Категория успешно обновлена",
   categoryUpdateError: "Не удалось обновить категорию",
-  categories: "Категории",
-  addSubcategory: "Добавить подкатегорию",
-  confirmDeleteCategory: "Вы уверены, что хотите удалить эту категорию?",
   categoryDeleted: "Категория удалена",
   categoryDeleteError: "Не удалось удалить категорию",
+  confirmDeleteCategory: "Вы уверены, что хотите удалить эту категорию?",
+  addSubcategory: "Добавить подкатегорию",
 
   // Товары
   addProduct: "Добавить новый товар",
@@ -91,7 +90,6 @@ const ru = {
   masterAddError: "Ошибка при добавлении преподавателя",
   masterUpdated: "Преподаватель успешно обновлён",
   masterUpdateError: "Ошибка обновления преподавателя",
-  confirmDeleteMaster: "Удалить этого преподавателя?",
   deleteMasterSuccess: "Преподаватель удалён",
   deleteMasterError: "Ошибка при удалении преподавателя"
 };
