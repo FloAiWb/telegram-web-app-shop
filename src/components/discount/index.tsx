@@ -1,6 +1,6 @@
 // src/components/Discount.tsx
 
-import React, { useState } from "react";
+import React from "react";
 import useTelegramUser from "@hooks/useTelegramUser";
 import useAddDiscounts from "@framework/api/discount/add";
 import useDeleteDiscount from "@framework/api/discount/delete";
@@ -24,7 +24,7 @@ import dayjs from "dayjs";
 import "dayjs/locale/ru";
 dayjs.locale("ru");
 
-import moment from "jalali-moment";
+import moment from "moment";    // ← обычный moment
 
 import t from "@/i18n/ru";
 
@@ -77,8 +77,8 @@ function Discount({ type, id, data }: Props) {
       product_id: type === "product" ? parseInt(id, 10) : null,
       discount_type: "percent",
       discount_value: percent,
-      discount_start_date: moment(discount_start_date.$d).format(),
-      discount_end_date: moment(discount_end_date.$d).format(),
+      discount_start_date: moment(discount_start_date.$d).toISOString(),
+      discount_end_date: moment(discount_end_date.$d).toISOString(),
       user_id: userId.toString()
     };
 
