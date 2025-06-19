@@ -15,20 +15,25 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    // define your module paths here:
+
+    // Базовая директория для путей
+    "baseUrl": ".",
+
+    // Алиасы для импорта
     "paths": {
-      "@components/*": ["./src/components/*"],
-      "@image/*": ["./src/assets/images/*"],
-      "@style/*": ["./src/assets/styles/*"],
-      "@pages/*": ["./src/pages/*"],
-      "@router/*": ["./src/router/"],
-      "@hooks/*": ["./src/hooks/*"],
-      "@helpers/*": ["./src/helpers/*"],
-      "@containers/*": ["./src/containers/*"],
-      "@framework/*": ["./src/framework/*"],
-      "@layout/*": ["./src/layout/*"]
-    },
-    "baseUrl": "."
+      "@/*":           ["src/*"],              // общий алиас @
+      "@components/*": ["src/components/*"],
+      "@image/*":      ["src/assets/images/*"],
+      "@style/*":      ["src/assets/styles/*"],
+      "@pages/*":      ["src/pages/*"],
+      "@router/*":     ["src/router/*"],
+      "@hooks/*":      ["src/hooks/*"],
+      "@helpers/*":    ["src/helpers/*"],
+      "@containers/*": ["src/containers/*"],
+      "@framework/*":  ["src/framework/*"],
+      "@layout/*":     ["src/layout/*"],
+      "@i18n/*":       ["src/i18n/*"]          // для переводов: "@/i18n/ru"
+    }
   },
   "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
