@@ -1,7 +1,9 @@
 // src/components/CustomerDetail.tsx
+
 import React from "react";
 import { List } from "antd";
-import moment from "jalali-moment";
+import moment from "moment";
+import "moment/locale/fa";
 import t from "@/i18n/ru";
 
 interface Props {
@@ -70,17 +72,21 @@ const CustomerDetail: React.FC<Props> = ({ orders }) => {
         <List.Item.Meta
           title={t.orderDateTitle}
           description={
-            <div>
+            <div className="space-y-1">
               <div>
                 <strong>{t.dateJalali}:</strong>{" "}
                 {orders?.order_Date
-                  ? moment(orders.order_Date).locale("fa").format("YYYY/MM/DD")
+                  ? moment(orders.order_Date)
+                      .locale("fa")
+                      .format("YYYY/MM/DD")
                   : t.notAvailable}
               </div>
               <div>
                 <strong>{t.dateGregorian}:</strong>{" "}
                 {orders?.order_Date
-                  ? moment(orders.order_Date).locale("en").format("YYYY/MM/DD")
+                  ? moment(orders.order_Date)
+                      .locale("en")
+                      .format("YYYY/MM/DD")
                   : t.notAvailable}
               </div>
             </div>
