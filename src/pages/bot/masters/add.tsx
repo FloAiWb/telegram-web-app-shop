@@ -1,165 +1,167 @@
-/* eslint-disable no-unused-expressions */
-/* eslint-disable operator-linebreak */
-/* eslint-disable react/no-array-index-key */
-/* eslint-disable camelcase */
+// src/components/AddMaster.tsx
+
+import React, { useState } from "react";
 import Container from "@components/container";
 import useAddMaster from "@framework/api/master/add";
 import useAddMasterImage from "@framework/api/photos-upload/add-master";
-import { TypePostMaster } from "@framework/types";
 import useTelegramUser from "@hooks/useTelegramUser";
-import { Button, Form, Input, message, Spin } from "antd";
-import { useState } from "react";
+import {
+  Button,
+  Form,
+  Input,
+  message,
+  Spin
+} from "antd";
 import ImageUploading from "react-images-uploading";
-import { useNavigate } from "react-router";
+import { useNavigate } from "react-router-dom";
+import t from "@/i18n/ru";
 
 const { TextArea } = Input;
-function Add() {
-  const [componentDisabled, setComponentDisabled] = useState<boolean>(false);
-  const [priceEnterd, setPriceEnterd] = useState<number>(0);
-  const mutation = useAddMaster();
-  const mutationUploadPhotos = useAddMasterImage();
-  const { id } = useTelegramUser();
+
+const AddMaster: React.FC = () => {
   const [form] = Form.useForm();
+  const [images, setImages] = useState<any[]>([]);
+  const [imageLinks, setImageLinks] = useState<string[]>([]);
+  const addMaster = useAddMaster();
+  const uploadPhoto = useAddMasterImage();
+  const { id: userId } = useTelegramUser();
   const navigate = useNavigate();
-  const [imageLinkList, setImageLinkList] = useState<Array<string>>([]);
-  const [images, setImages] = useState([]);
-  const onChangeImage = async (imageList) => {
-    // data for submit
-    imageList.length &&
-      (await imageList.map(async (i: { data_url: string }) => {
-        mutationUploadPhotos.mutate(
-          { photo_base64: i.data_url.split(",")[1] },
-          {
-            onSuccess: (e) => {
-              setImageLinkList([...imageLinkList, `${e.data}`]);
-            },
-            onError: () => {
-              message.error("افزودن عکس با مشکل مواجه شد");
-            }
-          }
-        );
-      }));
+
+  const onChangeImage = async (imageList: any[]) => {
     setImages(imageList);
-  };
-  const handleRemoveSingleImage = (idx) => {
-    const arr = [...imageLinkList];
-    if (idx !== -1) {
-      arr.splice(idx, 1);
-      setImageLinkList(arr);
+    for (const img of imageList) {
+      const base64 = img.data_url.split(",")[1];
+      uploadPhoto.mutate(
+        { photo_base64: base64 },
+        {
+          onSuccess: (res) => setImageLinks((prev) => [...prev, res.data]),
+          onError: () => message.error(t.imageUploadError)
+        }
+      );
     }
   };
 
+  const removeImage = (idx: number) => {
+    setImageLinks((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const onFinish = (values: { name: string; last_Name: string; description: string }) => {
+    addMaster.mutate(
+      {
+        name: values.name,
+        last_Name: values.last_Name,
+        description: values.description,
+        photo_Path: imageLinks.join(","),
+        user_Id: userId.toString()
+      },
+      {
+        onSuccess: () => {
+          message.success(t.masterAdded);
+          form.resetFields();
+          setImages([]);
+          setImageLinks([]);
+          navigate(-1);
+        },
+        onError: () => {
+          message.error(t.masterAddError);
+        }
+      }
+    );
+  };
+
   return (
-    <Container backwardUrl={-1} title="افزودن اساتید جدید">
+    <Container backwardUrl={-1} title={t.addMaster}>
       <Form
+        form={form}
+        layout="horizontal"
         labelCol={{ span: 5 }}
         wrapperCol={{ span: 20 }}
-        layout="horizontal"
-        disabled={componentDisabled}
-        onFinish={({
-          description,
-          last_Name,
-          name,
-          photo_Path,
-          user_Id
-        }: TypePostMaster) => {
-          console.log(imageLinkList.toString());
-
-          mutation.mutate(
-            {
-              description,
-              last_Name,
-              name,
-              photo_Path: imageLinkList.toString() || "",
-              user_Id: id.toString()
-            },
-            {
-              onSuccess: () => {
-                message.success(" استاد شما با موفقیت ثبت شد");
-                form.resetFields();
-                navigate(-1);
-              },
-              onError: (err) => {
-                // console.log(err)
-                message.error(err?.response?.data?.title);
-              }
-            }
-          );
-        }}>
-        <Form.Item name="name" required label="نام ">
-          <Input required />
-        </Form.Item>
-        <Form.Item name="last_Name" required label=" نام خانوادگی ">
-          <Input required />
-        </Form.Item>
-        <Form.Item label="توضیحات" required name="description">
-          <TextArea required rows={4} />
-        </Form.Item>
-        {/* <Form.Item label="Switch" valuePropName="checked">
-        <Switch />
-      </Form.Item> */}
+        onFinish={onFinish}
+        className="flex flex-col h-full"
+      >
         <Form.Item
-          className="mb-14 w-full"
+          name="name"
+          label={t.firstName}
+          rules={[{ required: true, message: t.requiredField }]}
+        >
+          <Input placeholder={t.firstNamePlaceholder} />
+        </Form.Item>
+
+        <Form.Item
+          name="last_Name"
+          label={t.lastName}
+          rules={[{ required: true, message: t.requiredField }]}
+        >
+          <Input placeholder={t.lastNamePlaceholder} />
+        </Form.Item>
+
+        <Form.Item
+          name="description"
+          label={t.description}
+          rules={[{ required: true, message: t.requiredField }]}
+        >
+          <TextArea rows={4} placeholder={t.descriptionPlaceholder} />
+        </Form.Item>
+
+        <Form.Item
           name="photos"
-          label="عکس"
-          valuePropName="photos">
-          {mutationUploadPhotos.isLoading ? (
-            <Spin spinning />
+          label={t.masterPhoto}
+          valuePropName="photos"
+        >
+          {uploadPhoto.isLoading ? (
+            <Spin tip={t.loading} />
           ) : (
             <ImageUploading
               value={images}
               onChange={onChangeImage}
               maxNumber={4}
-              dataURLKey="data_url">
+              dataURLKey="data_url"
+            >
               {({
                 onImageUpload,
                 onImageRemoveAll,
-                onImageRemove,
                 isDragging,
                 dragProps
               }) => (
-                // write your building UI
-                <div className="upload__image-wrapper flex flex-col">
-                  <div className="mb-5 flex h-[60px]  w-full">
+                <div className="flex flex-col gap-4">
+                  <div className="flex gap-2 mb-4 h-[60px]">
                     <button
-                      style={isDragging ? { color: "red" } : undefined}
-                      onClick={onImageUpload}
                       type="button"
-                      className="h-full w-full border-[1px] border-dashed"
-                      {...dragProps}>
-                      افزودن عکس
+                      onClick={onImageUpload}
+                      {...dragProps}
+                      style={isDragging ? { color: "red" } : undefined}
+                      className="flex-1 border border-dashed p-2"
+                    >
+                      {t.addImage}
                     </button>
-                    &nbsp;
                     <button
-                      className="h-full w-20 bg-red-600 "
                       type="button"
                       onClick={() => {
                         onImageRemoveAll();
-                        setImageLinkList([]);
-                      }}>
-                      حذف همه
+                        setImageLinks([]);
+                      }}
+                      className="w-32 bg-red-600 text-white"
+                    >
+                      {t.removeAllImages}
                     </button>
                   </div>
-                  <div className="grid h-[240px] w-full grid-cols-2 grid-rows-2  gap-y-7 overflow-x-auto overflow-y-scroll  ">
-                    {imageLinkList?.map((image, index) => (
-                      <div key={index} className=" h-24 w-36 rounded-lg">
+                  <div className="grid grid-cols-2 gap-4 overflow-auto h-[240px]">
+                    {imageLinks.map((link, idx) => (
+                      <div key={idx} className="relative">
                         <img
-                          src={`${import.meta.env.VITE_API_URL}/${image}`}
-                          alt=""
-                          className="h-full w-full rounded-lg "
+                          src={`${import.meta.env.VITE_API_URL}/${link}`}
+                          alt={t.masterPhotoAlt}
+                          className="w-full h-24 object-cover rounded"
                         />
-                        <div className="flex justify-between gap-3">
-                          <Button
-                            danger
-                            className="w-full"
-                            htmlType="button"
-                            onClick={() => {
-                              handleRemoveSingleImage(index);
-                              // onImageRemove(index)
-                            }}>
-                            حذف
-                          </Button>
-                        </div>
+                        <Button
+                          danger
+                          block
+                          size="small"
+                          onClick={() => removeImage(idx)}
+                          className="mt-2"
+                        >
+                          {t.removeImage}
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -171,17 +173,16 @@ function Add() {
 
         <Button
           type="primary"
-          style={{ width: "100%" }}
-          size="large"
-          ghost
-          loading={mutation.isLoading}
-          // className="sticky bottom-3"
-          htmlType="submit">
-          ذخیره
+          htmlType="submit"
+          loading={addMaster.isLoading}
+          disabled={addMaster.isLoading}
+          className="mt-auto w-full"
+        >
+          {t.save}
         </Button>
       </Form>
     </Container>
   );
-}
+};
 
-export default Add;
+export default AddMaster;
