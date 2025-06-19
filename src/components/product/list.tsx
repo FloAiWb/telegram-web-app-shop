@@ -1,200 +1,184 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable react/jsx-no-useless-fragment */
-/* eslint-disable object-curly-newline */
-/* eslint-disable no-nested-ternary */
+// src/components/ProductList.tsx
+
+import React, { useState } from "react";
 import {
   FileDoneOutlined,
   ReloadOutlined,
   SlidersOutlined
 } from "@ant-design/icons";
+import { Button, Divider, Drawer, Empty, Input, Pagination, Select, Tree } from "antd";
 import ProductsSkeleton from "@components/skeleton/products";
+import ProductItem from "./item";
 import { useGetCategories } from "@framework/api/categories/get";
 import { useGetProducts } from "@framework/api/product/get";
-import {
-  Button,
-  Divider,
-  Drawer,
-  Empty,
-  Input,
-  Pagination,
-  Select,
-  Tree
-} from "antd";
-import { useState } from "react";
-
-import ProductItem from "./item";
 import t from "@/i18n/ru";
 
 interface Props {
   pageType: "admin" | "user";
-  // data: TypeListProducts | undefined;
 }
-function ProductList({ pageType }: Props) {
+
+export default function ProductList({ pageType }: Props) {
   const [open, setOpen] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [categoryFilterId, setCategoryFilterId] = useState<number | undefined>(undefined);
+  const [search, setSearch] = useState<string>();
+  const [order, setOrder] = useState<"asc" | "desc">("desc");
 
-  const [currentPage, setCurrentPage] = useState<number>(1);
-  const [categoryFilterId, setCategoryFilterId] = useState<number | undefined>(
-    undefined
-  );
-  const [search, setSearch] = useState<string | undefined>(undefined);
-  const [Order, setOrder] = useState<"desc" | "asc">("desc");
-
-  const { data, error, refetch, isLoading, isFetching } = useGetProducts({
+  const {
+    data,
+    error,
+    isLoading,
+    isFetching,
+    refetch
+  } = useGetProducts({
     limit: 10,
     page: currentPage,
     categoryId: categoryFilterId,
     name: search,
-    order: Order
+    order
   });
+
   const {
     data: catData,
     isLoading: isCatLoading,
     isFetching: isCatFetching
   } = useGetCategories({});
-  // useEffect(() => {
-  //   refetch();
-  // }, [refetch, currentPage]);
+
   return (
     <div className="flex flex-col">
-      <div className=" flex flex-col items-end justify-center gap-2 ">
+      {/* Поиск и фильтры */}
+      <div className="flex flex-col items-end gap-2">
         <Input.Search
           loading={isLoading || isFetching}
           allowClear
-          onSearch={(e) => {
-            setSearch(e);
+          onSearch={(value) => {
+            setSearch(value);
             refetch();
           }}
+          placeholder={t.searchPlaceholder}
         />
+
         <div className="flex w-full items-center justify-between">
-          <div className="flex flex-col items-end justify-end">
-            <Select
-              onChange={(e) => {
-                setOrder(e);
-                refetch();
-              }}
-              value={Order}
-              defaultValue="desc"
-              style={{ width: "fit-content" }}
-              options={[
-                { value: "asc", label: "قیمت از کم به زیاد" },
-                { value: "desc", label: "قیمت از زیاد به کم" }
-              ]}
-            />
-          </div>
-          <Button onClick={() => setOpen(true)} icon={<SlidersOutlined />}>
-            فیلتر ها
+          <Select
+            value={order}
+            onChange={(val) => {
+              setOrder(val);
+              refetch();
+            }}
+            style={{ width: "200px" }}
+            options={[
+              { value: "asc", label: t.priceAsc },
+              { value: "desc", label: t.priceDesc }
+            ]}
+          />
+
+          <Button icon={<SlidersOutlined />} onClick={() => setOpen(true)}>
+            {t.filters}
           </Button>
         </div>
+
         <Drawer
+          title={t.filters}
+          placement="bottom"
+          height="90%"
+          className="rounded-t-3xl"
+          open={open}
+          onClose={() => setOpen(false)}
           extra={
             <div className="flex gap-3">
               <Button
-                className="w-full"
+                danger
+                block
+                size="large"
                 onClick={() => {
+                  setCategoryFilterId(undefined);
                   refetch();
                   setOpen(false);
                 }}
-                danger
-                size="large">
-                حذف فیلتر ها
+              >
+                {t.reset}
               </Button>
               <Button
-                className="w-full"
+                type="primary"
+                icon={<FileDoneOutlined />}
+                block
+                size="large"
                 onClick={() => {
                   refetch();
                   setOpen(false);
                 }}
-                size="large"
-                icon={<FileDoneOutlined />}>
-                اعمال فیلتر
+              >
+                {t.apply}
               </Button>
             </div>
           }
-          title=" فیلتر ها"
-          placement="bottom"
-          onClose={() => setOpen(false)}
-          width="100%"
-          height="90%"
-          className="rounded-t-3xl"
-          open={open}>
-          <div className="flex h-full w-full flex-col items-center justify-start gap-5">
-            <div className="w-full">
-              <Tree
-                loading={isCatLoading || isCatFetching}
-                disabled={isCatLoading || isCatFetching}
-                style={{ width: "100%" }}
-                treeData={catData}
-                showLine
-                defaultExpandAll
-                checkable
-                onCheck={(e) => {
-                  setCategoryFilterId(e);
-                }}
-                fieldNames={{
-                  title: "category_Name",
-                  key: "category_Id",
-                  children: "children"
-                }}
-                dropdownStyle={{ maxHeight: 400, overflow: "auto" }}
-                allowClear
-                multiple
-                selectable={false}
-              />
-            </div>
-          </div>
+        >
+          <Tree
+            loading={isCatLoading || isCatFetching}
+            checkable
+            multiple
+            selectable={false}
+            defaultExpandAll
+            fieldNames={{
+              title: "category_Name",
+              key: "category_Id",
+              children: "children"
+            }}
+            treeData={catData}
+            onCheck={(checkedKeys) => setCategoryFilterId(checkedKeys as number)}
+            style={{ width: "100%" }}
+          />
         </Drawer>
       </div>
+
       <Divider />
-      {/* <Suspense fallback={<ProductsSkeleton />}> */}
-      {/* <ProductsSkeleton /> */}
-      <div className="mb-10 flex flex-wrap gap-3">
+
+      {/* Список товаров */}
+      <div className="flex flex-wrap gap-3 mb-10">
         {isLoading || isFetching ? (
           <ProductsSkeleton />
         ) : error ? (
-          <div className="flex w-full flex-col items-center justify-center gap-5">
-            مشکلی رخ داده
-            <Button onClick={() => refetch()} icon={<ReloadOutlined />}>
-              تلاش مجدد
+          <div className="flex flex-col items-center gap-3 w-full">
+            <span>{t.error}</span>
+            <Button icon={<ReloadOutlined />} onClick={() => refetch()}>
+              {t.retry}
             </Button>
           </div>
         ) : data?.products.length === 0 ? (
-          <div className="flex w-full items-center justify-center">
-            <Empty description="اطلاعاتی موجود نیست" />
+          <div className="flex justify-center w-full">
+            <Empty description={t.noData} />
           </div>
         ) : (
-          <>
-            {data?.products.map((item) => (
-              <ProductItem
-                title={item.product_Name}
-                price={item.price}
-                imageURL={item.photo_path}
-                quantity={item.quantity}
-                product_Id={item.product_Id}
-                discountedPrice={item.discountedPrice}
-                pageType={pageType}
-                url={
-                  pageType === "admin"
-                    ? `/admin/products/${item?.product_Id}`
-                    : `/products/${item?.product_Id}`
-                }
-                key={item?.product_Id}
-              />
-            ))}
-          </>
+          data.products.map((item) => (
+            <ProductItem
+              key={item.product_Id}
+              url={
+                pageType === "admin"
+                  ? `/admin/products/${item.product_Id}`
+                  : `/products/${item.product_Id}`
+              }
+              title={item.product_Name}
+              price={item.price}
+              discountedPrice={item.discountedPrice}
+              quantity={item.quantity}
+              imageURL={item.photo_path}
+              pageType={pageType}
+            />
+          ))
         )}
       </div>
+
+      {/* Пагинация */}
       <Pagination
-        defaultCurrent={currentPage}
-        onChange={(e) => {
-          setCurrentPage(e);
-          refetch();
-        }}
+        current={currentPage}
         pageSize={10}
         total={data?.totalRows}
+        onChange={(page) => {
+          setCurrentPage(page);
+          refetch();
+        }}
+        showSizeChanger={false}
       />
-      {/* </Suspense> */}
     </div>
   );
 }
-
-export default ProductList;
