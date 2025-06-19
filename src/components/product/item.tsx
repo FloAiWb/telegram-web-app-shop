@@ -3,6 +3,7 @@
 /* eslint-disable react/jsx-one-expression-per-line */
 import { addCommas } from "@persian-tools/persian-tools";
 import { useNavigate } from "react-router";
+import t from "@/i18n/ru";
 
 interface Props {
   url: string;
