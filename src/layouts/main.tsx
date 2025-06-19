@@ -1,5 +1,3 @@
-/* eslint-disable camelcase */
-/* eslint-disable indent */
 import { useThemeParams } from "@vkruglikov/react-telegram-web-app";
 import { ConfigProvider, theme } from "antd";
 import ru_RU from "antd/locale/ru_RU";
@@ -11,19 +9,19 @@ interface Props {
 
 function Main({ children }: Props) {
   const [colorScheme, themeParams] = useThemeParams();
-  // const { id } = useTelegramUser();
-  // const { data } = useGetUserInfo({ user_Id: id });
+
   const customizeRenderEmpty = () => (
     <div style={{ textAlign: "center" }}>
-      <p>اطلاعاتی موجود نیست</p>
+      <p>Данных нет</p>
     </div>
   );
+
   return (
     <div className="app w-full py-1">
       <div className="w-full !max-w-[450px]">
         <ConfigProvider
-          direction="rtl"
-          locale={fa_IR}
+          direction="ltr"
+          locale={ru_RU}
           renderEmpty={customizeRenderEmpty}
           theme={
             themeParams.text_color
@@ -39,10 +37,8 @@ function Main({ children }: Props) {
                   }
                 }
               : undefined
-          }>
-          {/* <header className="App-header">
-              <img src="/vite.svg" className="App-logo" alt="logo" />
-            </header> */}
+          }
+        >
           <div className="contentWrapper">{children}</div>
         </ConfigProvider>
       </div>
