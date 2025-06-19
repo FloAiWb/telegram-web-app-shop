@@ -7,9 +7,12 @@ import { GetOrderStatus } from "@helpers/get-order-status";
 import { addCommas } from "@persian-tools/persian-tools";
 import { Table } from "antd";
 import type { ColumnsType } from "antd/es/table";
-import moment from "jalali-moment";
+import moment from "moment";
+import "moment/locale/ru";
 import { Link } from "react-router-dom";
 import t from "@/i18n/ru";
+
+moment.locale("ru");
 
 interface DataType {
   key: string;
@@ -86,13 +89,12 @@ const OrderListAdmin: React.FC = () => {
       title: t.orderDate,
       dataIndex: "time",
       key: "time",
-      render: (text) => (
-        <span>
-          {text
-            ? moment(text).locale("fa").format("YYYY/MM/DD")
-            : t.notAvailable}
-        </span>
-      )
+      render: (text) =>
+        text ? (
+          <span>{moment(text).format("DD.MM.YYYY")}</span>
+        ) : (
+          <span>{t.notAvailable}</span>
+        )
     }
   ];
 
