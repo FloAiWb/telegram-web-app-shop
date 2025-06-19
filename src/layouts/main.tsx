@@ -1,13 +1,15 @@
+// src/layouts/Main.tsx
+
+import React from "react";
 import { useThemeParams } from "@vkruglikov/react-telegram-web-app";
 import { ConfigProvider, theme } from "antd";
 import ru_RU from "antd/locale/ru_RU";
-import React from "react";
 
 interface Props {
   children: React.ReactNode;
 }
 
-function Main({ children }: Props) {
+const Main: React.FC<Props> = ({ children }) => {
   const [colorScheme, themeParams] = useThemeParams();
 
   const customizeRenderEmpty = () => (
@@ -44,6 +46,6 @@ function Main({ children }: Props) {
       </div>
     </div>
   );
-}
+};
 
 export default Main;
