@@ -17,11 +17,13 @@ import {
   Popconfirm
 } from "antd";
 import { DatePicker } from "antd";
-// и убедитесь, что ConfigProvider.locale={ru_RU} охватывает все DatePicker’ы
 
 import type { RangePickerProps } from "antd/es/date-picker";
 
 import dayjs from "dayjs";
+import "dayjs/locale/ru";
+dayjs.locale("ru");
+
 import moment from "jalali-moment";
 
 import t from "@/i18n/ru";
@@ -39,10 +41,6 @@ function Discount({ type, id, data }: Props) {
     discount_id: data?.discount_Id || ""
   });
   const deleteMutation = useDeleteDiscount();
-
-  const [checked, setChecked] = useState(false);
-
-  useJalaliLocaleListener();
 
   const disabledDate: RangePickerProps["disabledDate"] = (current) =>
     current && current < dayjs().endOf("day");
