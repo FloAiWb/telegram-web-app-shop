@@ -1,90 +1,93 @@
-/* eslint-disable react-hooks/rules-of-hooks */
-/* eslint-disable camelcase */
-/* eslint-disable no-nested-ternary */
-/* eslint-disable object-curly-newline */
+// src/components/SliderList.tsx
+
+import React, { useEffect } from "react";
 import { DeleteOutlined } from "@ant-design/icons";
 import Container from "@components/container";
 import useDeleteSlider from "@framework/api/slider/delete";
 import { useGetSliders } from "@framework/api/slider/get";
 import useTelegramUser from "@hooks/useTelegramUser";
 import { Button, message, Popconfirm, Space, Table } from "antd";
-import { useEffect } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { useLocation, useNavigate } from "react-router-dom";
+import t from "@/i18n/ru";
 
-function list() {
+interface SliderItem {
+  id: string;
+  url: string;
+  photo_Path: string;
+}
+
+const SliderList: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { data, isFetching, isLoading, refetch } = useGetSliders();
   const deleteMutation = useDeleteSlider();
-  const location = useLocation();
-  const { id: user_id } = useTelegramUser();
-  const handleDeleteSlide = (id: string) => {
+  const { id: userId } = useTelegramUser();
+
+  useEffect(() => {
+    refetch();
+  }, [location, refetch]);
+
+  const handleDeleteSlide = (slideId: string) => {
     deleteMutation.mutate(
-      {
-        master_id: id,
-        user_id
-      },
+      { master_id: slideId, user_id: userId },
       {
         onSuccess: () => {
-          message.success("اسلاید حذف شد");
+          message.success(t.sliderDeleted);
           refetch();
         },
         onError: () => {
-          message.error(" مشکل برای حذف رخ داد ");
+          message.error(t.sliderDeleteError);
           refetch();
         }
       }
     );
   };
 
-  const dataSource = data?.map((item) => ({
-    ...item,
-
-    key: item.id
-  }));
-  useEffect(() => {
-    refetch();
-  }, [location, refetch]);
+  const dataSource = data?.map((item: SliderItem) => ({
+    key: item.id,
+    ...item
+  })) || [];
 
   const columns = [
     {
-      title: "نام",
-      key: "name",
-      render: (_, record) => (
-        <div className="h-full w-14">
-          <img
-            src={`${import.meta.env.VITE_API_URL}/${record.photo_Path}`}
-            alt="slider"
-          />
-        </div>
+      title: t.image,
+      dataIndex: "photo_Path",
+      key: "photo",
+      render: (_: any, record: SliderItem) => (
+        <img
+          src={`${import.meta.env.VITE_API_URL}/${record.photo_Path}`}
+          alt={t.sliderImageAlt}
+          className="h-16 object-cover"
+        />
       )
     },
     {
-      title: "عملیات",
-      key: "عملیات",
-      render: (_, record) => (
+      title: t.actions,
+      key: "actions",
+      render: (_: any, record: SliderItem) => (
         <Space size="small">
           <Popconfirm
-            placement="top"
-            title="حذف این اسلاید ؟"
+            title={t.confirmDeleteSlide}
             onConfirm={() => handleDeleteSlide(record.id)}
-            okText="حذف"
-            okType="default"
-            cancelText="انصراف">
-            <Button type="link" size="small" danger>
-              <DeleteOutlined />
-            </Button>
+            okText={t.delete}
+            cancelText={t.cancel}
+            okType="danger"
+          >
+            <Button type="link" danger icon={<DeleteOutlined />} />
           </Popconfirm>
         </Space>
       )
     }
   ];
+
   return (
     <Container
-      title="اسلایدر"
+      title={t.slider}
       backwardUrl="/admin"
       customButton
-      customButtonTitle="افزودن"
-      customButtonOnClick={() => navigate("add")}>
+      customButtonTitle={t.add}
+      customButtonOnClick={() => navigate("add")}
+    >
       <Table
         loading={isFetching || isLoading || deleteMutation.isLoading}
         dataSource={dataSource}
@@ -92,6 +95,6 @@ function list() {
       />
     </Container>
   );
-}
+};
 
-export default list;
+export default SliderList;
