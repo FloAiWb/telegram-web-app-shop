@@ -2,7 +2,7 @@
 /* eslint-disable indent */
 import { useThemeParams } from "@vkruglikov/react-telegram-web-app";
 import { ConfigProvider, theme } from "antd";
-import fa_IR from "antd/lib/locale/ru";
+import ru_RU from "antd/locale/ru_RU";
 import React from "react";
 
 interface Props {
