@@ -9,8 +9,7 @@ const ru = {
   requiredField: "Обязательное поле",
   add: "Добавить",
   actions: "Действия",
-  name: "Название",
-  image: "Изображение",
+  edit: "Редактировать",
   currency: "₽",
 
   // Админ-меню
@@ -23,25 +22,6 @@ const ru = {
   // Бот-меню
   botSettings: "Настройки бота",
   masters: "Преподаватели",
-
-  // HeroSlider
-  sliderImageAlt: "Слайд изображения",
-
-  // Новинки
-  newProducts: "Новинки",
-
-  // Статусы заказа
-  pending: "В ожидании подтверждения",
-  processing: "В обработке",
-  packing: "Упаковка",
-  cancelledByCustomer: "Отменено клиентом",
-  cancelledDueToUnavailability: "Отменено из-за отсутствия",
-  cancelledByAdmin: "Отменено администратором",
-  shipped: "Доставлено",
-
-  // Заголовки
-  myCart: "Моя корзина",
-  userAccount: "Личный кабинет",
 
   // Категории
   addCategory: "Добавить категорию",
@@ -96,6 +76,7 @@ const ru = {
   sliderAddError: "Ошибка при добавлении слайда",
   sliderDeleted: "Слайд удалён",
   sliderDeleteError: "Ошибка при удалении слайда",
+  sliderImageAlt: "Слайд-изображение",
 
   // Преподаватели
   addMaster: "Добавить преподавателя",
@@ -110,13 +91,9 @@ const ru = {
   masterAddError: "Ошибка при добавлении преподавателя",
   masterUpdated: "Преподаватель успешно обновлён",
   masterUpdateError: "Ошибка обновления преподавателя",
-  masterName: "Имя преподавателя",
   confirmDeleteMaster: "Удалить этого преподавателя?",
   deleteMasterSuccess: "Преподаватель удалён",
-  deleteMasterError: "Ошибка при удалении преподавателя",
-
-  // Дополнительно
-  edit: "Редактировать"
+  deleteMasterError: "Ошибка при удалении преподавателя"
 };
 
 export default ru;
