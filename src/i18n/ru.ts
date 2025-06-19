@@ -33,6 +33,20 @@ const ru = {
   unitPrice: "Цена за единицу:",
   totalPriceLabel: "Сумма по позиции:",
   total:     "Итого",
+const ru = {
+  // …существующие переводы…
+  receiptPhotoTitle:   "Фото чека оплаты:",
+  receiptPhotoAlt:     "Чек оплаты",
+  userNameTitle:       "Имя пользователя:",
+  addressTitle:        "Адрес:",
+  trackingCodeTitle:   "Код отслеживания:",
+  orderDateTitle:      "Дата заказа:",
+  dateJalali:          "Шамси",
+  dateGregorian:       "Григорианский",
+  notAvailable:        "Нет данных"
+  // …остальные ключи…
+};
+export default ru;
 
   // валюта
   currency:  "₽"
