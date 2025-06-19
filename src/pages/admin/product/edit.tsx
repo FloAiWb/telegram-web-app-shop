@@ -1,15 +1,13 @@
-/* eslint-disable no-unused-expressions */
-/* eslint-disable operator-linebreak */
-/* eslint-disable react-hooks/exhaustive-deps */
-/* eslint-disable camelcase */
+// src/components/EditProduct.tsx
+
+import React, { useEffect, useState } from "react";
 import Container from "@components/container";
 import Discount from "@components/discount";
 import { useGetCategories } from "@framework/api/categories/get";
-import useAddProductImage from "@framework/api/photos-upload/add";
-import useDeleteProduct from "@framework/api/product/delete";
 import { useGetProductsById } from "@framework/api/product/get-by-id";
 import useUpdateProduct from "@framework/api/product/update";
-import { TypeProductPost } from "@framework/types";
+import useDeleteProduct from "@framework/api/product/delete";
+import useAddProductImage from "@framework/api/photos-upload/add";
 import useTelegramUser from "@hooks/useTelegramUser";
 import {
   Button,
@@ -21,272 +19,265 @@ import {
   Spin,
   TreeSelect
 } from "antd";
-import { useEffect, useState } from "react";
 import ImageUploading from "react-images-uploading";
-import { useNavigate, useParams } from "react-router";
+import { useNavigate, useParams } from "react-router-dom";
+import t from "@/i18n/ru";
 
 const { TextArea } = Input;
-function Edit() {
-  const [componentDisabled, setComponentDisabled] = useState<boolean>(false);
-  // const [priceEnterd, setPriceEnterd] = useState<number>(0);
-  const { product_id } = useParams();
+
+const EditProduct: React.FC = () => {
+  const { product_id } = useParams<{ product_id: string }>();
+  const navigate = useNavigate();
+  const { id: userId } = useTelegramUser();
+
+  // Категории
   const {
-    data: categoriesData,
-    isLoading: isCatLoading,
-    refetch: catRefetch,
-    isFetching: isCatFetching
+    data: categories,
+    isLoading: loadingCats,
+    refetch: refetchCats,
+    isFetching: fetchingCats
   } = useGetCategories({});
+
+  // Товар
   const {
     data: productData,
-    isLoading: isProductLoading,
-    isFetching: isProductFetching,
-    refetch: productRefetch
+    isLoading: loadingProduct,
+    isFetching: fetchingProduct,
+    refetch: refetchProduct
   } = useGetProductsById({ product_id });
-  const mutation = useUpdateProduct({ product_id });
-  const { id } = useTelegramUser();
+
+  // Мутации
+  const updateProduct = useUpdateProduct({ product_id });
+  const deleteProduct = useDeleteProduct();
+  const uploadPhoto = useAddProductImage();
+
+  // Форма и стейты
   const [form] = Form.useForm();
-  const navigate = useNavigate();
-  const mutationUploadPhotos = useAddProductImage();
-  const [imageLinkList, setImageLinkList] = useState<Array<string>>([]);
-  const [images, setImages] = useState([]);
-  const [hasDiscount, sethasDiscount] = useState<boolean>(false);
-
-  const deleteMutation = useDeleteProduct();
-  const onChangeImage = async (imageList) => {
-    // data for submit
-    imageList.length &&
-      (await imageList.map(async (i: { data_url: string }) => {
-        mutationUploadPhotos.mutate(
-          { photo_base64: i.data_url.split(",")[1] },
-          {
-            onSuccess: (e) => {
-              // console.log(`${import.meta.env.VITE_API_URL}/${e.data}`);
-              // console.log("upload done");
-              if (imageLinkList) {
-                setImageLinkList([...imageLinkList, `${e.data}`]);
-              } else {
-                setImageLinkList([`${e.data}`]);
-              }
-            },
-            onError: () => {
-              message.error("افزودن عکس با مشکل مواجه شد");
-            }
-          }
-        );
-      }));
-    setImages(imageList);
-  };
-  const handleRemoveSingleImage = (idx) => {
-    const arr = [...imageLinkList];
-    if (idx !== -1) {
-      arr.splice(idx, 1);
-      setImageLinkList(arr);
-    }
-  };
-  useEffect(() => {
-    catRefetch();
-    productRefetch();
-  }, []);
-  useEffect(() => {
-    setComponentDisabled(isProductLoading || isProductFetching);
-  }, [isProductLoading, isProductFetching]);
+  const [images, setImages] = useState<any[]>([]);
+  const [imageLinks, setImageLinks] = useState<string[]>([]);
+  const [disabled, setDisabled] = useState<boolean>(true);
 
   useEffect(() => {
-    if (!componentDisabled) {
-      setImageLinkList(productData?.photos);
+    refetchCats();
+    refetchProduct();
+  }, [refetchCats, refetchProduct]);
+
+  // Блокируем ui пока товар загружается
+  useEffect(() => {
+    setDisabled(loadingProduct || fetchingProduct);
+  }, [loadingProduct, fetchingProduct]);
+
+  // После загрузки товара заполняем изображения
+  useEffect(() => {
+    if (!disabled) {
+      setImageLinks(productData?.photos || []);
     }
-  }, [componentDisabled]);
-  // console.log(imageLinkList);
-  const onChange = (value: any) => {
-    // console.log(value);
+  }, [disabled, productData]);
+
+  // Обработка загрузки новых фото
+  const onChangeImage = async (list: any[]) => {
+    setImages(list);
+    for (const img of list) {
+      const base64 = img.data_url.split(",")[1];
+      uploadPhoto.mutate(
+        { photo_base64: base64 },
+        {
+          onSuccess: (res) => setImageLinks((prev) => [...prev, res.data]),
+          onError: () => message.error(t.productImageUploadError)
+        }
+      );
+    }
   };
-  const handleDeleteProduct = () => {
-    deleteMutation.mutate(
-      { product_id, user_id: id },
+
+  const removeImage = (idx: number) => {
+    setImageLinks((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  // Сохранение изменений
+  const onFinish = (values: any) => {
+    updateProduct.mutate(
       {
-        onSuccess: (e) => {
-          message.success("محصول با موفقیت حذف شد ");
+        user_id: userId.toString(),
+        product_name: values.product_name,
+        category_ids: Array.isArray(values.category_ids)
+          ? values.category_ids
+          : values.category_ids
+          ? [values.category_ids]
+          : [],
+        price: values.price,
+        quantity: values.quantity,
+        description: values.description,
+        photos: imageLinks
+      },
+      {
+        onSuccess: () => {
+          message.success(t.productUpdated);
+          form.resetFields();
           navigate("/admin/products");
         },
-        onError: () => {
-          message.error(" مشکلی در حذف این محصول رخ داد. دوباره تلاش کنید");
-        }
+        onError: () => message.error(t.productUpdateError)
+      }
+    );
+  };
+
+  // Удаление товара
+  const handleDelete = () => {
+    deleteProduct.mutate(
+      { product_id, user_id: userId.toString() },
+      {
+        onSuccess: () => {
+          message.success(t.productDeleted);
+          navigate("/admin/products");
+        },
+        onError: () => message.error(t.productDeleteError)
       }
     );
   };
 
   return (
-    <Container backwardUrl="/admin/products" title="بروز رسانی محصول ">
-      <Spin spinning={componentDisabled} tip="در حال بارگیری ...">
-        {componentDisabled ? (
-          <div className="h-screen" />
-        ) : (
+    <Container backwardUrl="/admin/products" title={t.editProduct}>
+      <Spin spinning={disabled} tip={t.loading}>
+        {!disabled && (
           <>
             <Form
+              form={form}
+              layout="horizontal"
               labelCol={{ span: 5 }}
               wrapperCol={{ span: 20 }}
-              layout="horizontal"
               initialValues={{
-                description: productData?.description,
                 product_name: productData?.product_Name,
+                category_ids: productData?.categoryIds,
                 price: productData?.price,
                 quantity: productData?.quantity,
-                category_ids: productData?.categoryIds
+                description: productData?.description
               }}
-              disabled={componentDisabled}
-              onFinish={({
-                category_ids,
-                description,
-                price,
-                product_name,
-                quantity
-              }: TypeProductPost) => {
-                mutation.mutate(
-                  {
-                    category_ids:
-                      typeof category_ids === "number"
-                        ? [category_ids]
-                        : category_ids || [],
-                    description,
-                    photos: imageLinkList || [],
-                    price,
-                    product_name,
-                    quantity,
-                    user_id: id.toString()
-                  },
-                  {
-                    onSuccess: () => {
-                      message.success(" محصول شما با موفقیت اپدیت شد");
-                      form.resetFields();
-                      navigate("/admin/products");
-                    },
-                    onError: (err) => {
-                      console.log(err);
-                    }
-                  }
-                );
-              }}>
-              <Form.Item name="product_name" required label="نام محصول">
-                <Input required />
+              disabled={disabled}
+              onFinish={onFinish}
+            >
+              {/* Название */}
+              <Form.Item
+                name="product_name"
+                label={t.productName}
+                rules={[{ required: true, message: t.requiredField }]}
+              >
+                <Input placeholder={t.productNamePlaceholder} />
               </Form.Item>
-              <Form.Item name="category_ids" required label="دسته بندی">
-                {/* <Cascader
-                style={{ width: "100%" }}
-                options={categoriesData}
-                onChange={onChange}
-                multiple={false}
-                changeOnSelect
-                maxTagCount="responsive"
-                loading={isCatLoading || isCatFetching}
-                fieldNames={{
-                  label: "category_Name",
-                  value: "category_Id",
-                  children: "children"
-                }}
-              /> */}
+
+              {/* Категория */}
+              <Form.Item
+                name="category_ids"
+                label={t.category}
+                rules={[{ required: true, message: t.requiredField }]}
+              >
                 <TreeSelect
                   showSearch
-                  showCheckedStrategy="SHOW_PARENT"
-                  treeData={categoriesData}
-                  loading={isCatLoading || isCatFetching}
-                  onChange={(e) => console.log(e)}
-                  treeLine
-                  style={{
-                    width: "100%"
-                  }}
+                  treeData={categories}
+                  loading={loadingCats || fetchingCats}
+                  placeholder={t.categoryPlaceholder}
                   fieldNames={{
                     label: "category_Name",
                     value: "category_Id",
-                    key: "category_Id",
                     children: "children"
                   }}
+                  style={{ width: "100%" }}
                 />
               </Form.Item>
 
-              <Form.Item label="قیمت (تومان) " required name="price">
-                <InputNumber
-                  required
-                  // onChange={(e) => setPriceEnterd(e || productData?.price)}
-                  formatter={(value) =>
-                    `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")
-                  }
-                  parser={(value) => value.replace(/\$\s?|(,*)/g, "")}
-                  className="w-1/2"
-                />
-              </Form.Item>
-              {/* <div className="-mt-4">
-              {numberToWords(priceEnterd)} <b>تومان</b>
-            </div> */}
-              <Form.Item label="تعداد موجودی" required name="quantity">
-                <InputNumber required type="number" className="w-1/2" />
-              </Form.Item>
-
-              <Form.Item label="توضیحات" required name="description">
-                <TextArea rows={10} />
-              </Form.Item>
-
+              {/* Цена */}
               <Form.Item
-                className="w-full"
+                name="price"
+                label={`${t.price} (${t.currency})`}
+                rules={[{ required: true, message: t.requiredField }]}
+              >
+                <InputNumber
+                  className="w-1/2"
+                  formatter={(v) => `${v}`.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                  parser={(v) => v.replace(/,*/g, "")}
+                  placeholder={t.pricePlaceholder}
+                />
+              </Form.Item>
+
+              {/* Количество */}
+              <Form.Item
+                name="quantity"
+                label={t.quantity}
+                rules={[{ required: true, message: t.requiredField }]}
+              >
+                <InputNumber
+                  className="w-1/2"
+                  placeholder={t.quantityPlaceholder}
+                />
+              </Form.Item>
+
+              {/* Описание */}
+              <Form.Item
+                name="description"
+                label={t.description}
+                rules={[{ required: true, message: t.requiredField }]}
+              >
+                <TextArea rows={6} placeholder={t.descriptionPlaceholder} />
+              </Form.Item>
+
+              {/* Фото */}
+              <Form.Item
                 name="photos"
-                label="عکس محصول"
-                valuePropName="photos">
-                {mutationUploadPhotos.isLoading ? (
-                  <Spin spinning />
+                label={t.productImages}
+                valuePropName="photos"
+              >
+                {uploadPhoto.isLoading ? (
+                  <Spin tip={t.loading} />
                 ) : (
                   <ImageUploading
                     value={images}
                     onChange={onChangeImage}
                     maxNumber={4}
-                    dataURLKey="data_url">
+                    dataURLKey="data_url"
+                  >
                     {({
                       onImageUpload,
                       onImageRemoveAll,
-                      onImageRemove,
                       isDragging,
                       dragProps
                     }) => (
-                      // write your building UI
-                      <div className="upload__image-wrapper flex flex-col">
-                        <div className="mb-5 flex h-[60px]  w-full">
+                      <div className="flex flex-col gap-4">
+                        <div className="flex gap-2 mb-4 h-[60px]">
                           <button
-                            style={isDragging ? { color: "red" } : undefined}
-                            onClick={onImageUpload}
                             type="button"
-                            className="h-full w-full border-[1px] border-dashed"
-                            {...dragProps}>
-                            افزودن عکس
+                            onClick={onImageUpload}
+                            {...dragProps}
+                            style={isDragging ? { color: "red" } : undefined}
+                            className="flex-1 border border-dashed p-2"
+                          >
+                            {t.addImages}
                           </button>
-                          &nbsp;
                           <button
-                            className="h-full w-20 bg-red-600 "
                             type="button"
                             onClick={() => {
                               onImageRemoveAll();
-                              setImageLinkList([]);
-                            }}>
-                            حذف همه
+                              setImageLinks([]);
+                            }}
+                            className="w-32 bg-red-600 text-white"
+                          >
+                            {t.removeAllImages}
                           </button>
                         </div>
-                        <div className="grid h-[240px] w-full grid-cols-2 grid-rows-2  gap-y-7 overflow-x-auto overflow-y-scroll  ">
-                          {imageLinkList?.map((image, index) => (
-                            <div key={index} className=" h-36 w-36 rounded-lg">
+                        <div className="grid grid-cols-2 gap-4 overflow-auto h-[240px]">
+                          {imageLinks.map((link, idx) => (
+                            <div key={idx} className="relative">
                               <img
-                                src={`${import.meta.env.VITE_API_URL}/${image}`}
-                                alt=""
-                                className="h-full w-full rounded-lg "
+                                src={`${import.meta.env.VITE_API_URL}/${link}`}
+                                alt={t.productImageAlt}
+                                className="w-full h-24 object-cover rounded"
                               />
-                              <div className="mt-2 flex justify-between gap-3">
-                                <Button
-                                  danger
-                                  className="w-full"
-                                  htmlType="button"
-                                  onClick={() => {
-                                    handleRemoveSingleImage(index);
-                                    // onImageRemove(index)
-                                  }}>
-                                  حذف
-                                </Button>
-                              </div>
+                              <Button
+                                danger
+                                block
+                                size="small"
+                                onClick={() => removeImage(idx)}
+                                className="mt-2"
+                              >
+                                {t.removeImage}
+                              </Button>
                             </div>
                           ))}
                         </div>
@@ -296,44 +287,36 @@ function Edit() {
                 )}
               </Form.Item>
 
+              {/* Действия */}
               <div className="flex gap-3">
                 <Popconfirm
-                  placement="top"
-                  title="حذف این محصول ؟"
-                  onConfirm={() => handleDeleteProduct()}
-                  okText="حذف"
-                  okType="default"
-                  cancelText="انصراف">
-                  <Button
-                    size="large"
-                    loading={deleteMutation.isLoading}
-                    style={{ width: "36%" }}
-                    danger>
-                    حذف محصول
+                  title={t.confirmDeleteProduct}
+                  onConfirm={handleDelete}
+                  okText={t.delete}
+                  cancelText={t.cancel}
+                  okType="danger"
+                >
+                  <Button danger block>
+                    {t.deleteProduct}
                   </Button>
                 </Popconfirm>
-                <Button
-                  type="primary"
-                  loading={mutation.isLoading}
-                  style={{ width: "65%" }}
-                  size="large"
-                  ghost
-                  // className="sticky bottom-3"
-                  htmlType="submit">
-                  ذخیره
+                <Button type="primary" ghost htmlType="submit" block>
+                  {t.save}
                 </Button>
               </div>
             </Form>
+
+            {/* Скидки */}
             <Discount
-              data={productData?.discount}
-              id={product_id}
               type="product"
+              id={product_id || ""}
+              data={productData?.discount ?? null}
             />
           </>
         )}
       </Spin>
     </Container>
   );
-}
+};
 
-export default Edit;
+export default EditProduct;
