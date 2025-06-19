@@ -55,7 +55,7 @@ function Card({
             className={`flex flex-row gap-3 self-end text-right ${
               finalPrice && " text-sm text-gray-500 line-through"
             }`}>
-            <span>تومان</span> <span>{addCommas(price)}</span>
+            <span>₽</span> <span>{addCommas(price)}</span>
           </div>
           {finalPrice && (
             <div className="flex flex-row gap-3 self-end text-right">
